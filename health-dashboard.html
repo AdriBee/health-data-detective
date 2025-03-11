@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Detective - Medical Mystery Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --text: #333333;
+            --light-bg: #f8f9fa;
+            --border: #e9ecef;
+            --patient-a: #4361ee;
+            --patient-b: #f72585;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --correct-answer: #2ecc71;
+            --wrong-answer: #e74c3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text);
+            padding: 20px;
+        }
+        
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 25px;
+            border-radius: 12px;
+            background-color: white;
+            box-shadow: var(--card-shadow);
+            position: relative;
+        }
+        
+        header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            max-width: 120px; /* Limit maximum width */
+            display: block;
+        }
+        
+        .logo:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Add styles for title container */
+        .title-container {
+            position: relative;
+            padding-left: 15px;
+        }
+        
+        .title-container:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 10%;
+            height: 80%;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--primary), var(--accent));
+            border-radius: 3px;
+        }
+        
+        /* Style the legend better */
+        .legend {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background-color: var(--light-bg);
+            padding: 8px 15px;
+            border-radius: 30px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Add responsive styles */
+        @media (max-width: 992px) {
+            .header-left {
+                gap: 15px;
+            }
+            
+            .logo {
+                height: 35px;
+                max-width: 100px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .logo-container {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .title-container {
+                padding-left: 0;
+                text-align: center;
+            }
+            
+            .title-container:before {
+                display: none;
+            }
+            
+            header h1 {
+                font-size: 20px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .legend {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+            
+            .legend-color {
+                width: 12px;
+                height: 12px;
+            }
+        }
+        
+        /* Introduction section styles */
+        .intro-section {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .intro-section h2 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .intro-section p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .mission-box {
+            background-color: #e8f4fd;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .mission-box h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        /* Add new styles for the mission-box list items */
+        .mission-box ul {
+            padding-left: 20px;
+            margin: 12px 0;
+        }
+        
+        .mission-box li {
+            margin-bottom: 10px;
+            position: relative;
+            list-style-type: none;
+            padding-left: 15px;
+        }
+        
+        .mission-box li:before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 18px;
+            position: absolute;
+            left: -5px;
+            top: -2px;
+        }
+        
+        .mission-box p {
+            margin-bottom: 10px;
+        }
+        
+        .start-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 15px;
+        }
+        
+        .start-button:hover {
+            background-color: var(--secondary);
+            transform: translateY(-2px);
+        }
+        
+        .game-progress {
+            display: flex;
+            justify-content: space-between;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .progress-badge {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .progress-badge.completed {
+            background-color: var(--correct-answer);
+            color: white;
+        }
+        
+        .hint-button {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .hint-button:hover {
+            background-color: #e9ecef;
+        }
+        
+        /* Interactive elements */
+        .activity-form {
+            background-color: #f0f7ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .activity-form h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .activity-question {
+            margin-bottom: 20px;
+        }
+        
+        .activity-question p {
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .answer-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .answer-option {
+            background-color: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .answer-option:hover {
+            border-color: var(--primary);
+        }
+        
+        .answer-option.selected {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .submit-answers {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .submit-answers:hover {
+            background-color: var(--secondary);
+        }
+        
+        .feedback-message {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .feedback-message.correct {
+            background-color: rgba(46, 204, 113, 0.2);
+            border: 1px solid var(--correct-answer);
+            color: #27ae60;
+        }
+        
+        .feedback-message.incorrect {
+            background-color: rgba(231, 76, 60, 0.2);
+            border: 1px solid var(--wrong-answer);
+            color: #c0392b;
+        }
+        
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .patient-card-label {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .patient-a-label {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--patient-a);
+        }
+        
+        .patient-b-label {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--patient-b);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .insights {
+            margin-top: 25px;
+            background-color: #f0f5ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .insights h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: auto;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 250px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            background-color: #fafafa;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .patient-chart-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .patient-chart-title:before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .patient-a-title:before {
+            background-color: var(--patient-a);
+        }
+        
+        .patient-b-title:before {
+            background-color: var(--patient-b);
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .metric-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .metric-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        
+        .risk-indicator {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        .high-risk {
+            background-color: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .medium-risk {
+            background-color: #fff8e1;
+            color: #ff8f00;
+        }
+        
+        .low-risk {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .data-section {
+            margin-top: 40px;
+        }
+        
+        .data-section h2 {
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .patient-comparison {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 25px;
+        }
+        
+        .patient-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .patient-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .patient-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .avatar-a {
+            background-color: #e1e8ff;
+            color: var(--patient-a);
+        }
+        
+        .avatar-b {
+            background-color: #ffe1ee;
+            color: var(--patient-b);
+        }
+        
+        .patient-info h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .patient-info p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .patient-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .patient-metric {
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+        }
+        
+        .patient-metric h4 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .patient-metric p {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .conclusion {
+            margin-top: 40px;
+            padding: 25px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .conclusion h2 {
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+        
+        .conclusion-content {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .conclusion-text {
+            flex: 1;
+        }
+        
+        .conclusion-text p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .risk-assessment {
+            flex: 1;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .risk-assessment h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .risk-factor {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .risk-factor:last-child {
+            border-bottom: none;
+        }
+        
+        .risk-factor-name {
+            font-weight: 500;
+        }
+        
+        .risk-bar-container {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        .risk-bar {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        .risk-bar-a {
+            background-color: var(--patient-a);
+        }
+        
+        .risk-bar-b {
+            background-color: var(--patient-b);
+        }
+        
+        .tab-container {
+            margin-top: 20px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            padding: 12px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            font-weight: 500;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* New UI component styles */
+        .intro-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .intro-card h2 {
+            font-size: 22px;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .intro-card p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .detective-tip {
+            background-color: #fff8dc;
+            border-left: 4px solid #ffd700;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .detective-tip h3 {
+            color: #b8860b;
+            margin-bottom: 8px;
+        }
+        
+        /* Patient comparison UI elements */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .comparison-title {
+            grid-column: 1 / -1;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        
+        .patient-column {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .patient-column h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .patient-column h3 .patient-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .patient-a-indicator {
+            background-color: var(--patient-a);
+        }
+        
+        .patient-b-indicator {
+            background-color: var(--patient-b);
+        }
+
+        .value-explanation {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+        }
+        
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        .explanation-text {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 200px;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        
+        .value-explanation:hover .explanation-text {
+            visibility: visible;
+            opacity: 1;
+            bottom: calc(100% + 5px);
+        }
+        
+        .continue-section {
+            background-color: #e0f7fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+            text-align: center;
+        }
+        
+        .continue-section p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .continue-button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .continue-button:hover {
+            background-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .congratulation-message {
+            background-color: #f0fff4;
+            border: 2px dashed var(--correct-answer);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px auto;
+            text-align: center;
+            display: none;
+            max-width: 800px;
+            box-shadow: 0 6px 18px rgba(46, 204, 113, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .congratulation-message::before,
+        .congratulation-message::after {
+            content: "🎉";
+            position: absolute;
+            font-size: 40px;
+            opacity: 0.2;
+        }
+        
+        .congratulation-message::before {
+            top: 10px;
+            left: 10px;
+        }
+        
+        .congratulation-message::after {
+            bottom: 10px;
+            right: 10px;
+        }
+        
+        .congratulation-message h3 {
+            color: var(--correct-answer);
+            margin-bottom: 15px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .detective-badge {
+            display: inline-flex;
+            margin: 20px auto;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, gold, #ffd700);
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            border: 4px solid white;
+            animation: badge-shine 2s infinite alternate;
+        }
+        
+        @keyframes badge-shine {
+            from { box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
+            to { box-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 30px rgba(255, 215, 0, 0.4); }
+        }
+        
+        .congratulation-message p {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .congratulation-message ul {
+            display: inline-block;
+            text-align: left;
+            margin: 15px auto;
+            padding: 15px 25px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+        }
+        
+        .congratulation-message li {
+            margin-bottom: 10px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .congratulation-message .start-button {
+            margin-top: 25px;
+            background: linear-gradient(135deg, var(--correct-answer), #27ae60);
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .congratulation-message .start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .legend-a {
+            background-color: var(--patient-a);
+        }
+
+        .legend-b {
+            background-color: var(--patient-b);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <div class="header-left">
+                <div class="logo-container">
+                    <img src="BVLogo.png" alt="BV Logo" class="logo">
+                    <img src="IDHILogo.png" alt="IDHI Logo" class="logo">
+                </div>
+                <div class="title-container">
+                    <h1>Health Detective: Medical Mystery Challenge</h1>
+                </div>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color legend-a"></div>
+                    <span>Patient A</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-b"></div>
+                    <span>Patient B</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Introduction Section -->
+        <div class="intro-section" id="introSection">
+            <h2>Welcome Health Detectives! 🔍</h2>
+            <p>You've been chosen to join a special team of medical detectives! Your mission is to investigate two patients and figure out which health conditions they might have.</p>
+            
+            <div class="mission-box">
+                <h3>Your Mission:</h3>
+                <p>Study the charts, numbers, and information about Patient A and Patient B. Then use your detective skills to figure out:</p>
+                <ul>
+                    <li>Which patient has diabetes (a condition where the body has trouble controlling blood sugar)</li>
+                    <li>Which patient has hypertension (high blood pressure)</li>
+                    <li>Which patient has obesity (having too much body weight for their height)</li>
+                </ul>
+                <p><strong>Remember:</strong> Be careful! Sometimes one piece of information alone can be misleading. For example, a person with high weight might not have obesity if they are very tall.</p>
+            </div>
+            
+            <p>As you explore each section, you'll collect clues and answer questions to solve the case. Are you ready to become a Health Detective?</p>
+            
+            <button class="start-button" id="startActivity">Start Investigation!</button>
+        </div>
+        
+        <!-- Game Progress Tracking -->
+        <div class="game-progress" id="gameProgress" style="display: none;">
+            <div class="progress-item">
+                <span class="progress-badge">1</span>
+                <span>Diabetes Clues</span>
+            </div>
+            <div class="progress-item">
+                <span class="progress-badge">2</span>
+                <span>Hypertension Clues</span>
+            </div>
+            <div class="progress-item">
+                <span class="progress-badge">3</span>
+                <span>Obesity Clues</span>
+            </div>
+            <div class="progress-item">
+                <span class="progress-badge">4</span>
+                <span>Final Diagnosis</span>
+            </div>
+            <button class="hint-button" id="getHint">Get a Hint</button>
+        </div>
+        
+        <div class="tab-container" id="tabContainer" style="display: none;">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="glucose">Clue #1: Blood Sugar</button>
+                <button class="tab-button" data-tab="bmi">Clue #2: Height & Weight</button>
+                <button class="tab-button" data-tab="heart">Clue #3: Heart Health</button>
+                <button class="tab-button" data-tab="diagnosis">Your Diagnosis!</button>
+            </div>
+            
+            <div class="tab-content active" id="glucose-tab">
+                <div class="intro-card full-width">
+                    <h2>Clue #1: Blood Sugar Investigation</h2>
+                    <p>Blood sugar (glucose) is the amount of sugar in a person's blood. Our bodies need glucose for energy, but too much can be a problem.</p>
+                    <p>When a person has <strong>diabetes</strong>, their body has trouble controlling blood sugar levels, which can make the numbers go too high.</p>
+                    <div class="detective-tip">
+                        <h3>🔍 Detective Tip:</h3>
+                        <p>Normal blood sugar is usually between 70-99 mg/dL. If someone's blood sugar is often higher than 126 mg/dL, they might have diabetes.</p>
+                    </div>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="comparison-title">Glucose Levels Over Time</div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-a-indicator"></span> Patient A</h3>
+                        <div class="chart-container">
+                            <canvas id="glucoseChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-b-indicator"></span> Patient B</h3>
+                        <div class="chart-container">
+                            <canvas id="glucoseChartB"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="patient-comparison">
+                    <div class="patient-card">
+                        <div class="patient-header">
+                            <div class="patient-avatar avatar-a">A</div>
+                            <div class="patient-info">
+                                <h3>Patient A</h3>
+                                <p>45 years old, Male</p>
+                            </div>
+                        </div>
+                        <div class="patient-metrics">
+                            <div class="patient-metric">
+                                <h4>Average Glucose</h4>
+                                <p>92 mg/dL</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Fasting Glucose</h4>
+                                <p>85 mg/dL</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Glucose Variability</h4>
+                                <p>Low</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>A1C</h4>
+                                <p>5.2%</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">A1C shows average blood sugar over 3 months. Normal is below 5.7%.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="patient-card">
+                        <div class="patient-header">
+                            <div class="patient-avatar avatar-b">B</div>
+                            <div class="patient-info">
+                                <h3>Patient B</h3>
+                                <p>49 years old, Female</p>
+                            </div>
+                        </div>
+                        <div class="patient-metrics">
+                            <div class="patient-metric">
+                                <h4>Average Glucose</h4>
+                                <p>162 mg/dL</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Fasting Glucose</h4>
+                                <p>142 mg/dL</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Glucose Variability</h4>
+                                <p>High</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>A1C</h4>
+                                <p>7.8%</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">A1C shows average blood sugar over 3 months. Normal is below 5.7%.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Glucose Activity Form -->
+                <div class="activity-form" id="glucoseActivity">
+                    <h3>Diabetes Detective Challenge</h3>
+                    
+                    <div class="activity-question">
+                        <p>1. Based on the glucose (blood sugar) data, which statement is most likely true?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Both patients have normal blood sugar levels</div>
+                            <div class="answer-option" data-value="b">B. Patient A has higher blood sugar than Patient B</div>
+                            <div class="answer-option" data-value="c">C. Patient B has higher blood sugar than Patient A</div>
+                            <div class="answer-option" data-value="d">D. We can't tell from this data</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>2. A1C is a test that shows average blood sugar over 3 months. Normal A1C is below 5.7%. Based on A1C values, which patient might have diabetes?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient A</div>
+                            <div class="answer-option" data-value="b">B. Patient B</div>
+                            <div class="answer-option" data-value="c">C. Both patients</div>
+                            <div class="answer-option" data-value="d">D. Neither patient</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>3. Which clue is the MOST important for diagnosing diabetes?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Age</div>
+                            <div class="answer-option" data-value="b">B. Gender (male or female)</div>
+                            <div class="answer-option" data-value="c">C. Blood sugar levels</div>
+                            <div class="answer-option" data-value="d">D. All clues are equally important</div>
+                        </div>
+                    </div>
+                    
+                    <button class="submit-answers" id="submitGlucose">Submit Answers</button>
+                    
+                    <div class="feedback-message" id="glucoseFeedback"></div>
+                </div>
+                
+                <!-- Continue Button - Hidden initially -->
+                <div class="continue-section" id="glucoseContinue" style="display: none;">
+                    <p>Great detective work on blood sugar clues! Ready to investigate the next set of clues?</p>
+                    <button class="continue-button" data-tab="bmi">Continue to Height & Weight Clues</button>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="bmi-tab">
+                <div class="intro-card full-width">
+                    <h2>Clue #2: Height & Weight Investigation</h2>
+                    <p>When doctors want to know if someone has <strong>obesity</strong>, they don't just look at weight. They use something called BMI (Body Mass Index), which compares a person's weight to their height.</p>
+                    <p>This helps doctors understand if someone's weight is in the healthy range for their height.</p>
+                    <div class="detective-tip">
+                        <h3>🔍 Detective Tip:</h3>
+                        <p>BMI Categories:<br>
+                           • Below 18.5 = Underweight<br>
+                           • 18.5 to 24.9 = Healthy Weight<br>
+                           • 25.0 to 29.9 = Overweight<br>
+                           • 30.0 and Above = Obesity</p>
+                    </div>
+                </div>
+            
+                <div class="comparison-grid">
+                    <div class="comparison-title">BMI Over Time</div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-a-indicator"></span> Patient A</h3>
+                        <div class="chart-container">
+                            <canvas id="bmiChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-b-indicator"></span> Patient B</h3>
+                        <div class="chart-container">
+                            <canvas id="bmiChartB"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-title">Weight Trends</div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-a-indicator"></span> Patient A</h3>
+                        <div class="chart-container">
+                            <canvas id="weightChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-b-indicator"></span> Patient B</h3>
+                        <div class="chart-container">
+                            <canvas id="weightChartB"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="patient-comparison">
+                    <div class="patient-card">
+                        <div class="patient-header">
+                            <div class="patient-avatar avatar-a">A</div>
+                            <div class="patient-info">
+                                <h3>Patient A</h3>
+                                <p>45 years old, Male</p>
+                            </div>
+                        </div>
+                        <div class="patient-metrics">
+                            <div class="patient-metric">
+                                <h4>Current Weight</h4>
+                                <p>155 lbs</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Height</h4>
+                                <p>5'10" (178 cm)</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Current BMI</h4>
+                                <p>22.3</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">BMI is calculated using weight and height. BMI over 30 is considered obesity.</span>
+                                </div>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Weight Change (1yr)</h4>
+                                <p>-2 lbs</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="patient-card">
+                        <div class="patient-header">
+                            <div class="patient-avatar avatar-b">B</div>
+                            <div class="patient-info">
+                                <h3>Patient B</h3>
+                                <p>49 years old, Female</p>
+                            </div>
+                        </div>
+                        <div class="patient-metrics">
+                            <div class="patient-metric">
+                                <h4>Current Weight</h4>
+                                <p>198 lbs</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Height</h4>
+                                <p>5'6" (168 cm)</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Current BMI</h4>
+                                <p>32.1</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">BMI is calculated using weight and height. BMI over 30 is considered obesity.</span>
+                                </div>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Weight Change (1yr)</h4>
+                                <p>+6 lbs</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BMI Activity Form -->
+                <div class="activity-form" id="bmiActivity">
+                    <h3>Obesity Detective Challenge</h3>
+                    
+                    <div class="activity-question">
+                        <p>1. Looking at Patient A and Patient B, who has a higher BMI?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient A</div>
+                            <div class="answer-option" data-value="b">B. Patient B</div>
+                            <div class="answer-option" data-value="c">C. Their BMIs are the same</div>
+                            <div class="answer-option" data-value="d">D. Can't tell from the data</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>2. Patient A weighs 155 pounds and Patient B weighs 198 pounds. Which statement is correct?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient B has obesity because they weigh more</div>
+                            <div class="answer-option" data-value="b">B. Patient A has obesity because their weight is changing</div>
+                            <div class="answer-option" data-value="c">C. We need to consider both weight AND height to determine obesity</div>
+                            <div class="answer-option" data-value="d">D. Neither patient has obesity</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>3. Based on the BMI information, which patient has obesity?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient A (BMI 22.3)</div>
+                            <div class="answer-option" data-value="b">B. Patient B (BMI 32.1)</div>
+                            <div class="answer-option" data-value="c">C. Both patients</div>
+                            <div class="answer-option" data-value="d">D. Neither patient</div>
+                        </div>
+                    </div>
+                    
+                    <button class="submit-answers" id="submitBMI">Submit Answers</button>
+                    
+                    <div class="feedback-message" id="bmiFeedback"></div>
+                </div>
+                
+                <!-- Continue Button - Hidden initially -->
+                <div class="continue-section" id="bmiContinue" style="display: none;">
+                    <p>Excellent work, detective! You've learned how BMI helps determine obesity. Ready for more clues?</p>
+                    <button class="continue-button" data-tab="heart">Continue to Heart Health Clues</button>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="heart-tab">
+                <div class="intro-card full-width">
+                    <h2>Clue #3: Heart Health Investigation</h2>
+                    <p>Your heart pumps blood throughout your body. Doctors can measure how well your heart is working by checking your heart rate (how fast your heart beats) and blood pressure (how hard your blood pushes against your arteries).</p>
+                    <p>When someone has <strong>hypertension</strong>, it means their blood pressure is too high, which can cause health problems over time.</p>
+                    <div class="detective-tip">
+                        <h3>🔍 Detective Tip:</h3>
+                        <p>Blood Pressure Categories:<br>
+                           • Normal: Less than 120/80 mmHg<br>
+                           • Elevated: 120-129/less than 80 mmHg<br>
+                           • Stage 1 Hypertension: 130-139/80-89 mmHg<br>
+                           • Stage 2 Hypertension: 140/90 mmHg or higher</p>
+                    </div>
+                </div>
+            
+                <div class="comparison-grid">
+                    <div class="comparison-title">Heart Rate Over Time</div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-a-indicator"></span> Patient A</h3>
+                        <div class="chart-container">
+                            <canvas id="heartRateChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-b-indicator"></span> Patient B</h3>
+                        <div class="chart-container">
+                            <canvas id="heartRateChartB"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-title">Blood Pressure Trends</div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-a-indicator"></span> Patient A</h3>
+                        <div class="chart-container">
+                            <canvas id="bpChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="patient-column">
+                        <h3><span class="patient-indicator patient-b-indicator"></span> Patient B</h3>
+                        <div class="chart-container">
+                            <canvas id="bpChartB"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="patient-comparison">
+                    <div class="patient-card">
+                        <div class="patient-header">
+                            <div class="patient-avatar avatar-a">A</div>
+                            <div class="patient-info">
+                                <h3>Patient A</h3>
+                                <p>45 years old, Male</p>
+                            </div>
+                        </div>
+                        <div class="patient-metrics">
+                            <div class="patient-metric">
+                                <h4>Avg. Resting Heart Rate</h4>
+                                <p>68 bpm</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">Normal heart rate is 60-100 beats per minute.</span>
+                                </div>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Avg. Blood Pressure</h4>
+                                <p>118/76 mmHg</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">Blood pressure shows how hard your blood pushes against your arteries.</span>
+                                </div>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>BP Classification</h4>
+                                <p>Normal</p>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>HR Variability</h4>
+                                <p>Normal</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="patient-card">
+                        <div class="patient-header">
+                            <div class="patient-avatar avatar-b">B</div>
+                            <div class="patient-info">
+                                <h3>Patient B</h3>
+                                <p>49 years old, Female</p>
+                            </div>
+                        </div>
+                        <div class="patient-metrics">
+                            <div class="patient-metric">
+                                <h4>Avg. Resting Heart Rate</h4>
+                                <p>87 bpm</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">Normal heart rate is 60-100 beats per minute.</span>
+                                </div>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>Avg. Blood Pressure</h4>
+                                <p>142/92 mmHg</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">Blood pressure shows how hard your blood pushes against your arteries.</span>
+                                </div>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>BP Classification</h4>
+                                <p>Stage 2 HTN</p>
+                                <div class="value-explanation">
+                                    <span class="info-icon">i</span>
+                                    <span class="explanation-text">HTN means hypertension (high blood pressure).</span>
+                                </div>
+                            </div>
+                            <div class="patient-metric">
+                                <h4>HR Variability</h4>
+                                <p>Reduced</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Heart Activity Form -->
+                <div class="activity-form" id="heartActivity">
+                    <h3>Hypertension Detective Challenge</h3>
+                    
+                    <div class="activity-question">
+                        <p>1. Based on the blood pressure data, which patient might have hypertension (high blood pressure)?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient A</div>
+                            <div class="answer-option" data-value="b">B. Patient B</div>
+                            <div class="answer-option" data-value="c">C. Both patients</div>
+                            <div class="answer-option" data-value="d">D. Neither patient</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>2. Patient B's blood pressure is 142/92 mmHg. What does this mean?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. This is a normal blood pressure</div>
+                            <div class="answer-option" data-value="b">B. This is Stage 1 hypertension</div>
+                            <div class="answer-option" data-value="c">C. This is Stage 2 hypertension</div>
+                            <div class="answer-option" data-value="d">D. This is low blood pressure</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>3. How might someone help lower their blood pressure? (Pick the BEST answer)</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Eating more sugary foods</div>
+                            <div class="answer-option" data-value="b">B. Regular exercise and healthy diet</div>
+                            <div class="answer-option" data-value="c">C. Watching more TV</div>
+                            <div class="answer-option" data-value="d">D. Drinking more soda</div>
+                        </div>
+                    </div>
+                    
+                    <button class="submit-answers" id="submitHeart">Submit Answers</button>
+                    
+                    <div class="feedback-message" id="heartFeedback"></div>
+                </div>
+                
+                <!-- Continue Button - Hidden initially -->
+                <div class="continue-section" id="heartContinue" style="display: none;">
+                    <p>Fantastic detective skills! You've collected all the clues about heart health and hypertension. Now it's time to solve the case!</p>
+                    <button class="continue-button" data-tab="diagnosis">Make Your Final Diagnosis</button>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="diagnosis-tab">
+                <div class="intro-card full-width">
+                    <h2>Final Diagnosis: Solve The Medical Mystery!</h2>
+                    <p>Great work, Health Detective! You've collected all the clues about our two patients. Now it's time to solve the case and determine which patient has each condition.</p>
+                    <p>Remember to look at ALL the evidence before making your conclusions. Sometimes one piece of information alone can be misleading!</p>
+                </div>
+                
+                <div class="activity-form" id="diagnosisActivity">
+                    <h3>Your Medical Diagnosis</h3>
+                    
+                    <div class="activity-question">
+                        <p>1. Which patient has DIABETES?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient A</div>
+                            <div class="answer-option" data-value="b">B. Patient B</div>
+                            <div class="answer-option" data-value="c">C. Both patients</div>
+                            <div class="answer-option" data-value="d">D. Neither patient</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>2. Which patient has HYPERTENSION (high blood pressure)?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient A</div>
+                            <div class="answer-option" data-value="b">B. Patient B</div>
+                            <div class="answer-option" data-value="c">C. Both patients</div>
+                            <div class="answer-option" data-value="d">D. Neither patient</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>3. Which patient has OBESITY?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Patient A</div>
+                            <div class="answer-option" data-value="b">B. Patient B</div>
+                            <div class="answer-option" data-value="c">C. Both patients</div>
+                            <div class="answer-option" data-value="d">D. Neither patient</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>4. Which piece of evidence do you think was MOST important in diagnosing diabetes?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Blood glucose levels</div>
+                            <div class="answer-option" data-value="b">B. The patient's weight</div>
+                            <div class="answer-option" data-value="c">C. Heart rate</div>
+                            <div class="answer-option" data-value="d">D. Age</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-question">
+                        <p>5. Why is it important to look at BMI instead of just weight when diagnosing obesity?</p>
+                        <div class="answer-options">
+                            <div class="answer-option" data-value="a">A. Because weight alone doesn't tell us if someone is overweight for their height</div>
+                            <div class="answer-option" data-value="b">B. Because we only care about how much someone weighs</div>
+                            <div class="answer-option" data-value="c">C. Because taller people are always healthier</div>
+                            <div class="answer-option" data-value="d">D. BMI and weight tell us the same thing</div>
+                        </div>
+                    </div>
+                    
+                    <button class="submit-answers" id="submitDiagnosis">Submit Your Diagnosis</button>
+                    
+                    <div class="feedback-message" id="diagnosisFeedback"></div>
+                </div>
+                
+                <!-- Congratulation message - Hidden initially -->
+                <div class="congratulation-message" id="congratsMessage">
+                    <h3>Congratulations, Health Detective!</h3>
+                    <div class="detective-badge">🏅</div>
+                    <p>You've successfully diagnosed all the conditions correctly! Here's what you discovered:</p>
+                    <ul>
+                        <li><strong>Patient A:</strong> Healthy - no diabetes, no hypertension, no obesity</li>
+                        <li><strong>Patient B:</strong> Has diabetes, hypertension, and obesity</li>
+                    </ul>
+                    <p>You showed great critical thinking skills by looking at all the evidence before making your diagnosis. Remember that sometimes one piece of information (like weight alone) can be misleading.</p>
+                    <p>You're now an official Health Detective! Keep using your skills to make healthy choices in your life.</p>
+                    <button class="start-button" id="restartActivity">Start New Investigation</button>
+                </div>
+            </div>
+            
+            <!-- Remove the additional-tab since we'll replace it with the diagnosis tab -->
+            <div class="tab-content" id="additional-tab" style="display: none;">
+                <!-- Content hidden as we're not using this tab anymore -->
+            </div>
+        </div>
+        
+        <!-- Replace the conclusion section with a simpler feedback section for students -->
+        <div class="conclusion" style="display: none;">
+            <h2>Health Detective Feedback</h2>
+            <div class="conclusion-content">
+                <div class="conclusion-text">
+                    <p id="finalFeedback">Complete all the activities to see your feedback here!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Activity flow control
+            const introSection = document.getElementById('introSection');
+            const gameProgress = document.getElementById('gameProgress');
+            const tabContainer = document.getElementById('tabContainer');
+            const startButton = document.getElementById('startActivity');
+            const restartButton = document.getElementById('restartActivity');
+            
+            // Initialize answer tracking
+            const userAnswers = {
+                glucose: [],
+                bmi: [],
+                heart: [],
+                diagnosis: []
+            };
+            
+            // Correct answers for each activity
+            const correctAnswers = {
+                glucose: ['c', 'b', 'c'],
+                bmi: ['b', 'c', 'b'],
+                heart: ['b', 'c', 'b'],
+                diagnosis: ['b', 'b', 'b', 'a', 'a']
+            };
+
+            // Tab functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            // Progress tracking
+            const progressBadges = document.querySelectorAll('.progress-badge');
+            let completedSections = [];
+            
+            // Start the activity
+            startButton.addEventListener('click', function() {
+                introSection.style.display = 'none';
+                gameProgress.style.display = 'flex';
+                tabContainer.style.display = 'block';
+                
+                // Make sure the first tab is active
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                tabButtons[0].classList.add('active');
+                document.getElementById('glucose-tab').classList.add('active');
+            });
+            
+            // Restart the activity
+            if (restartButton) {
+                restartButton.addEventListener('click', function() {
+                    location.reload();
+                });
+            }
+            
+            // Tab switching
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tab = button.dataset.tab;
+                    
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button and corresponding content
+                    button.classList.add('active');
+                    document.getElementById(`${tab}-tab`).classList.add('active');
+                });
+            });
+            
+            // Handle continue buttons
+            const continueButtons = document.querySelectorAll('.continue-button');
+            continueButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const nextTab = this.dataset.tab;
+                    
+                    // Activate the next tab
+                    tabButtons.forEach(btn => {
+                        if (btn.dataset.tab === nextTab) {
+                            btn.click();
+                        }
+                    });
+                });
+            });
+            
+            // Handle answer selection
+            const answerOptions = document.querySelectorAll('.answer-option');
+            answerOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Get parent question
+                    const question = this.closest('.activity-question');
+                    const questionIndex = Array.from(question.parentNode.children).filter(el => el.classList.contains('activity-question')).indexOf(question);
+                    
+                    // Remove selected class from siblings
+                    const siblings = question.querySelectorAll('.answer-option');
+                    siblings.forEach(sib => sib.classList.remove('selected'));
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    
+                    // Store the answer
+                    const activityId = question.closest('.activity-form').id.replace('Activity', '');
+                    userAnswers[activityId][questionIndex] = this.dataset.value;
+                });
+            });
+            
+            // Handle submit buttons
+            const submitGlucose = document.getElementById('submitGlucose');
+            const submitBMI = document.getElementById('submitBMI');
+            const submitHeart = document.getElementById('submitHeart');
+            const submitDiagnosis = document.getElementById('submitDiagnosis');
+            
+            // Submit Glucose Activity
+            if (submitGlucose) {
+                submitGlucose.addEventListener('click', function() {
+                    const feedback = document.getElementById('glucoseFeedback');
+                    const continueSec = document.getElementById('glucoseContinue');
+                    const score = checkAnswers('glucose');
+                    const total = correctAnswers.glucose.length;
+                    
+                    if (score === total) {
+                        feedback.classList.add('correct');
+                        feedback.classList.remove('incorrect');
+                        feedback.innerHTML = `<p>Great job! You got ${score}/${total} correct!</p><p>You understand how blood glucose levels help diagnose diabetes.</p>`;
+                        feedback.style.display = 'block';
+                        continueSec.style.display = 'block';
+                        
+                        // Update progress
+                        updateProgress('glucose');
+                    } else {
+                        feedback.classList.add('incorrect');
+                        feedback.classList.remove('correct');
+                        feedback.innerHTML = `<p>You got ${score}/${total} correct. Try again!</p><p>Remember that diabetes affects blood sugar levels.</p>`;
+                        feedback.style.display = 'block';
+                    }
+                });
+            }
+            
+            // Submit BMI Activity
+            if (submitBMI) {
+                submitBMI.addEventListener('click', function() {
+                    const feedback = document.getElementById('bmiFeedback');
+                    const continueSec = document.getElementById('bmiContinue');
+                    const score = checkAnswers('bmi');
+                    const total = correctAnswers.bmi.length;
+                    
+                    if (score === total) {
+                        feedback.classList.add('correct');
+                        feedback.classList.remove('incorrect');
+                        feedback.innerHTML = `<p>Excellent work! You got ${score}/${total} correct!</p><p>You understand that BMI is important for diagnosing obesity, not just weight alone.</p>`;
+                        feedback.style.display = 'block';
+                        continueSec.style.display = 'block';
+                        
+                        // Update progress
+                        updateProgress('bmi');
+                    } else {
+                        feedback.classList.add('incorrect');
+                        feedback.classList.remove('correct');
+                        feedback.innerHTML = `<p>You got ${score}/${total} correct. Try again!</p><p>Remember that BMI considers both height and weight.</p>`;
+                        feedback.style.display = 'block';
+                    }
+                });
+            }
+            
+            // Submit Heart Activity
+            if (submitHeart) {
+                submitHeart.addEventListener('click', function() {
+                    const feedback = document.getElementById('heartFeedback');
+                    const continueSec = document.getElementById('heartContinue');
+                    const score = checkAnswers('heart');
+                    const total = correctAnswers.heart.length;
+                    
+                    if (score === total) {
+                        feedback.classList.add('correct');
+                        feedback.classList.remove('incorrect');
+                        feedback.innerHTML = `<p>Well done! You got ${score}/${total} correct!</p><p>You understand how to identify hypertension from blood pressure readings.</p>`;
+                        feedback.style.display = 'block';
+                        continueSec.style.display = 'block';
+                        
+                        // Update progress
+                        updateProgress('heart');
+                    } else {
+                        feedback.classList.add('incorrect');
+                        feedback.classList.remove('correct');
+                        feedback.innerHTML = `<p>You got ${score}/${total} correct. Try again!</p><p>Remember to check the blood pressure categories.</p>`;
+                        feedback.style.display = 'block';
+                    }
+                });
+            }
+            
+            // Submit Final Diagnosis
+            if (submitDiagnosis) {
+                submitDiagnosis.addEventListener('click', function() {
+                    const feedback = document.getElementById('diagnosisFeedback');
+                    const congratsMsg = document.getElementById('congratsMessage');
+                    const diagnosisForm = document.getElementById('diagnosisActivity');
+                    const score = checkAnswers('diagnosis');
+                    const total = correctAnswers.diagnosis.length;
+                    
+                    if (score === total) {
+                        feedback.classList.add('correct');
+                        feedback.classList.remove('incorrect');
+                        feedback.innerHTML = `<p>Amazing detective work! You got ${score}/${total} correct!</p>`;
+                        feedback.style.display = 'block';
+                        
+                        // Show congratulations message
+                        setTimeout(() => {
+                            diagnosisForm.style.display = 'none';
+                            feedback.style.display = 'none';
+                            congratsMsg.style.display = 'block';
+                            
+                            // Update progress
+                            updateProgress('diagnosis');
+                        }, 1500);
+                    } else {
+                        feedback.classList.add('incorrect');
+                        feedback.classList.remove('correct');
+                        feedback.innerHTML = `<p>You got ${score}/${total} correct. Try again!</p><p>Review all the clues carefully before making your diagnosis.</p>`;
+                        feedback.style.display = 'block';
+                    }
+                });
+            }
+            
+            // Helper function to check answers
+            function checkAnswers(section) {
+                let score = 0;
+                for (let i = 0; i < correctAnswers[section].length; i++) {
+                    if (userAnswers[section][i] === correctAnswers[section][i]) {
+                        score++;
+                    }
+                }
+                return score;
+            }
+            
+            // Update progress indicators
+            function updateProgress(section) {
+                // Add section to completed list if not already there
+                if (!completedSections.includes(section)) {
+                    completedSections.push(section);
+                }
+                
+                // Update progress badges
+                if (section === 'glucose') {
+                    progressBadges[0].classList.add('completed');
+                } else if (section === 'bmi') {
+                    progressBadges[1].classList.add('completed');
+                } else if (section === 'heart') {
+                    progressBadges[2].classList.add('completed');
+                } else if (section === 'diagnosis') {
+                    progressBadges[3].classList.add('completed');
+                }
+            }
+            
+            // Hint button functionality
+            const hintButton = document.getElementById('getHint');
+            if (hintButton) {
+                hintButton.addEventListener('click', function() {
+                    // Determine which hint to show based on active tab
+                    let activeTab = '';
+                    tabContents.forEach(content => {
+                        if (content.classList.contains('active')) {
+                            activeTab = content.id.replace('-tab', '');
+                        }
+                    });
+                    
+                    let hintMessage = '';
+                    switch(activeTab) {
+                        case 'glucose':
+                            hintMessage = 'Hint: Look at the blood sugar numbers. Normal is 70-99 mg/dL. Higher numbers might mean diabetes.';
+                            break;
+                        case 'bmi':
+                            hintMessage = 'Hint: Compare each patient\'s BMI to the BMI categories. Remember, BMI over 30 means obesity.';
+                            break;
+                        case 'heart':
+                            hintMessage = 'Hint: Normal blood pressure is less than 120/80 mmHg. BP of 140/90 mmHg or higher is Stage 2 hypertension.';
+                            break;
+                        case 'diagnosis':
+                            hintMessage = 'Hint: Review all the clues you\'ve collected. Patient B has consistently higher values across several measurements.';
+                            break;
+                        default:
+                            hintMessage = 'Explore each section to collect more clues!';
+                    }
+                    
+                    alert(hintMessage);
+                });
+            }
+
+            // Generate dates
+            function generateDates(count = 12) {
+                const dates = [];
+                const today = new Date();
+                
+                for (let i = count - 1; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setMonth(today.getMonth() - i);
+                    dates.push(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+                }
+                
+                return dates;
+            }
+
+            const dates = generateDates();
+
+            // Define chart configuration
+            Chart.defaults.font.family = "'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+            Chart.defaults.font.size = 12;
+            Chart.defaults.color = '#666';
+
+            // Common configuration
+            const chartConfig = {
+                type: 'line',
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 10,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#333',
+                            bodyColor: '#666',
+                            borderColor: '#e9ecef',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                borderDash: [2, 4],
+                                drawBorder: false
+                            }
+                        }
+                    },
+                    elements: {
+                        line: {
+                            tension: 0.3
+                        },
+                        point: {
+                            radius: 3,
+                            hoverRadius: 5
+                        }
+                    }
+                }
+            };
+
+            // Render glucose chart - Patient A
+            new Chart(document.getElementById('glucoseChart').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient A',
+                            data: [92, 90, 94, 89, 91, 93, 90, 92, 91, 93, 92, 91],
+                            borderColor: 'var(--patient-a)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render glucose chart - Patient B
+            new Chart(document.getElementById('glucoseChartB').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient B',
+                            data: [145, 162, 158, 170, 165, 175, 168, 172, 180, 165, 172, 162],
+                            borderColor: 'var(--patient-b)',
+                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render BMI chart - Patient A 
+            new Chart(document.getElementById('bmiChart').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient A',
+                            data: [22.8, 22.7, 22.6, 22.5, 22.4, 22.4, 22.3, 22.3, 22.2, 22.3, 22.3, 22.3],
+                            borderColor: 'var(--patient-a)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render BMI chart - Patient B
+            new Chart(document.getElementById('bmiChartB').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient B',
+                            data: [30.5, 30.8, 31.0, 31.2, 31.4, 31.5, 31.6, 31.7, 31.8, 31.9, 32.0, 32.1],
+                            borderColor: 'var(--patient-b)',
+                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render Weight chart - Patient A
+            new Chart(document.getElementById('weightChart').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient A',
+                            data: [157, 157, 156, 156, 155, 155, 155, 154, 154, 155, 155, 155],
+                            borderColor: 'var(--patient-a)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render Weight chart - Patient B
+            new Chart(document.getElementById('weightChartB').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient B',
+                            data: [192, 193, 194, 195, 196, 196, 197, 197, 198, 198, 198, 198],
+                            borderColor: 'var(--patient-b)',
+                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render Heart Rate chart - Patient A
+            new Chart(document.getElementById('heartRateChart').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient A',
+                            data: [69, 68, 70, 67, 68, 69, 68, 67, 68, 69, 68, 68],
+                            borderColor: 'var(--patient-a)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render Heart Rate chart - Patient B
+            new Chart(document.getElementById('heartRateChartB').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient B',
+                            data: [85, 86, 87, 88, 87, 89, 88, 87, 86, 87, 88, 87],
+                            borderColor: 'var(--patient-b)',
+                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render BP chart - Patient A
+            new Chart(document.getElementById('bpChart').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient A',
+                            data: [120, 118, 119, 117, 118, 120, 119, 118, 117, 118, 119, 118],
+                            borderColor: 'var(--patient-a)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Render BP chart - Patient B
+            new Chart(document.getElementById('bpChartB').getContext('2d'), {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Patient B',
+                            data: [138, 140, 141, 142, 143, 142, 144, 143, 142, 143, 142, 142],
+                            borderColor: 'var(--patient-b)',
+                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig.options,
+                    plugins: {
+                        ...chartConfig.options.plugins,
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Add additional styles for better responsiveness
+            const styleEl = document.createElement('style');
+            styleEl.innerHTML = `
+                @media (max-width: 768px) {
+                    .card-container {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .patient-comparison {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .conclusion-content {
+                        flex-direction: column;
+                    }
+                    
+                    .answer-options {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .game-progress {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 10px;
+                    }
+                    
+                    .hint-button {
+                        align-self: center;
+                        margin-top: 10px;
+                    }
+                }
+                
+                .chart-container {
+                    position: relative;
+                    height: 250px !important;
+                    width: 100%;
+                }
+                
+                .card {
+                    margin-bottom: 20px;
+                    transition: all 0.3s ease;
+                }
+                
+                .card:hover {
+                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+                }
+                
+                .tab-content {
+                    animation: fadeEffect 0.5s;
+                }
+                
+                @keyframes fadeEffect {
+                    from {opacity: 0;}
+                    to {opacity: 1;}
+                }
+                
+                /* Additional educational styles */
+                .detective-tip {
+                    animation: tipPulse 2s infinite;
+                }
+                
+                @keyframes tipPulse {
+                    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+                }
+                
+                .value-explanation .info-icon {
+                    animation: infoWiggle 5s ease-in-out infinite;
+                }
+                
+                @keyframes infoWiggle {
+                    0%, 7%, 100% { transform: rotate(0); }
+                    15% { transform: rotate(-15deg); }
+                    20% { transform: rotate(10deg); }
+                    25% { transform: rotate(-10deg); }
+                    30% { transform: rotate(6deg); }
+                    35% { transform: rotate(-4deg); }
+                    40%, 100% { transform: rotate(0); }
+                }
+            `;
+            document.head.appendChild(styleEl);
+        });
+    </script>
+</body>
+</html>
